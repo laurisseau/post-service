@@ -10,14 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
-	/*
-		"encoding/json"
-		"log"
-		"github.com/laurisseau/sportsify-config"
-		"github.com/laurisseau/user-service/utils"
-		"github.com/laurisseau/user-service/models"
-		"github.com/laurisseau/user-service/authenticator"
-	*/)
+)
 
 func CreateHandler(ctx *gin.Context) {
     form, err := ctx.MultipartForm()
