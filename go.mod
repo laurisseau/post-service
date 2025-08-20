@@ -1,0 +1,1 @@
+module github.com/laurisseau/post-service
