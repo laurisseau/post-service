@@ -3,7 +3,7 @@ package main
 import (
     "log"
 	"net/http"
-	"github.com/laurisseau/user-service/handler"
+	"github.com/laurisseau/post-service/handler"
     "github.com/laurisseau/user-service/authenticator"
 	"github.com/gin-gonic/gin"
     "github.com/laurisseau/sportsify-config"
