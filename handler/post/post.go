@@ -3,7 +3,7 @@ package post
 import (
 	"net/http"
 	"github.com/gin-gonic/gin"
-	
+
 	/*
 	"encoding/json"
 	"log"
@@ -14,11 +14,8 @@ import (
 	*/
 )
 
-
-
-
 // Handler to get profile information from the session.
-func createHandler(ctx *gin.Context) {
+func CreateHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"post": "Post created",
 	})

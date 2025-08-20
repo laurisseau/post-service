@@ -3,7 +3,9 @@ module github.com/laurisseau/post-service
 go 1.23.5
 
 require (
+	github.com/gin-contrib/sessions v1.0.4
 	github.com/gin-gonic/gin v1.10.1
+	github.com/google/uuid v1.6.0
 	github.com/laurisseau/sportsify-config v0.1.4
 	github.com/laurisseau/user-service v0.0.0-20250817065417-8d530676e023
 )
@@ -28,7 +30,6 @@ require (
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/coreos/go-oidc/v3 v3.15.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
-	github.com/gin-contrib/sessions v1.0.4 // indirect
 	github.com/gin-contrib/sse v1.0.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
