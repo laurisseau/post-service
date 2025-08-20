@@ -10,9 +10,14 @@ import (
 // the user has already been authenticated previously.
 
 func IsAuthenticated(ctx *gin.Context) {
-	if sessions.Default(ctx).Get("profile") == nil {
-		ctx.Redirect(http.StatusSeeOther, "/")
-	} else {
-		ctx.Next()
-	}
+    session := sessions.Default(ctx)
+
+    if session.Get("profile") == nil {
+        ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+            "error": "you have to login",
+        })
+        return
+    }
+
+    ctx.Next() // only runs if authenticated
 }

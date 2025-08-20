@@ -8,7 +8,7 @@ import (
     "github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
     "github.com/laurisseau/post-service/handler/post"
-    "github.com/laurisseau/post-service/handler/middleware"
+    //"github.com/laurisseau/post-service/handler/middleware"
     
 )
 
@@ -22,7 +22,7 @@ func Router(db *sql.DB, auth *authenticator.Authenticator, router *gin.Engine) {
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("auth-session", store))
 
-	router.POST("/post/create", middleware.IsAuthenticated, post.CreateHandler)
+	router.POST("/post/create", post.CreateHandler)
 
 	/*
 	router.DELETE("/post/delete:id", middleware.IsAuthenticated,)
