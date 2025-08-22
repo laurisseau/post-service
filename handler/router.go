@@ -8,6 +8,7 @@ import (
     "github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
     "github.com/laurisseau/post-service/handler/post"
+	
     //"github.com/laurisseau/post-service/handler/middleware"
     
 )
@@ -22,11 +23,17 @@ func Router(db *sql.DB, auth *authenticator.Authenticator, router *gin.Engine) {
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("auth-session", store))
 
-	router.POST("/post/create", post.CreateHandler)
+	router.POST("/post/create", func(c *gin.Context) {
+		post.CreateHandler(c, db)
+	})
+
+	router.GET("/post/listUserPosts", func(c *gin.Context) {
+		post.ListUserPostsHandler(c, db)
+	})
 
 	/*
 	router.DELETE("/post/delete:id", middleware.IsAuthenticated,)
     router.PATCH("/post/update:id", middleware.IsAuthenticated,)
-    router.GET("/post/get:id", middleware.IsAuthenticated, )
+    
 	*/
 }

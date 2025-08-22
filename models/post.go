@@ -1,15 +1,15 @@
 package models
 
 import (
-	//"time"
-	//"github.com/google/uuid"
+	"time"
+	"github.com/google/uuid"
 )
 
 // Post model for LinkedIn-style posts
-/*
+
 type Post struct {
 	ID            uuid.UUID   `json:"id" db:"id"`                           // Primary key
-	UserID        uuid.UUID   `json:"user_id" db:"user_id"`                 // Reference to User
+	UserID        string   	  `json:"user_id" db:"user_id"`                 // Reference to User
 	Caption       string      `json:"caption" db:"caption"`                 // Text content
 	Images        []string    `json:"images" db:"images"`                   // Array of S3 image URLs
 	Videos        []string    `json:"videos" db:"videos"`                   // Array of S3 video URLs
@@ -20,9 +20,11 @@ type Post struct {
 	Visibility    string      `json:"visibility" db:"visibility"`           // "public", "connections", "private"
 	Tags          []string    `json:"tags" db:"tags"`                       // Optional hashtags, mentions, etc.
 }
-*/
 
+/*
 type Post struct {
 	Images        []string    `json:"images" db:"images"`                   // Array of S3 image URLs
 	Videos        []string    `json:"videos" db:"videos"`                   // Array of S3 video URLs
 }
+
+*/
