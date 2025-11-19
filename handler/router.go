@@ -4,18 +4,19 @@ import (
     "github.com/gin-gonic/gin"
     "github.com/laurisseau/user-service/authenticator"
     "encoding/gob"
-    "database/sql"
     "github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
     "github.com/laurisseau/post-service/handler/post"
-	
+	"github.com/laurisseau/sportsify-config"
     //"github.com/laurisseau/post-service/handler/middleware"
     
 )
 
 // New registers the routes and returns the router.
-func Router(db *sql.DB, auth *authenticator.Authenticator, router *gin.Engine) {
-
+func Router(auth *authenticator.Authenticator, router *gin.Engine) {
+	
+	db := config.DB()
+    println("db result", db)
 	// To store custom types in our cookies,
 	// we must first register them using gob.Register
 	gob.Register(map[string]interface{}{})
