@@ -10,7 +10,7 @@ require (
 	github.com/gin-contrib/sessions v1.0.4
 	github.com/gin-gonic/gin v1.10.1
 	github.com/google/uuid v1.6.0
-	github.com/laurisseau/sportsify-config v0.1.5
+	github.com/laurisseau/sportsify-config v0.1.6
 	github.com/laurisseau/user-service v0.0.0-20250817065417-8d530676e023
 	github.com/lib/pq v1.10.9
 )

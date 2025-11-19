@@ -15,7 +15,10 @@ import (
 // New registers the routes and returns the router.
 func Router(auth *authenticator.Authenticator, router *gin.Engine) {
 	
-	db := config.DB()
+	db, err := config.DB()
+    if err != nil {
+        panic(err)
+    }
     println("db result", db)
 	// To store custom types in our cookies,
 	// we must first register them using gob.Register
