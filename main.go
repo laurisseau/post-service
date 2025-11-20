@@ -6,13 +6,17 @@ import (
 	"github.com/laurisseau/post-service/handler"
     "github.com/laurisseau/user-service/authenticator"
 	"github.com/gin-gonic/gin"
+    "github.com/laurisseau/sportsify-config"
 )
 
 func main() {
 
     r := gin.Default()
-    
-    //test push
+
+    db, err := config.DB()
+    if err != nil {
+        panic(err)
+    }
 
     // Initialize Authenticator
 	auth, err := authenticator.New()
@@ -20,7 +24,7 @@ func main() {
 		log.Fatalf("Failed to initialize Authenticator: %v", err)
 	}
 
-	handler.Router(auth, r)
+	handler.Router(db, auth, r)
 
     r.GET("post/", func(c *gin.Context) {
         c.JSON(http.StatusOK, gin.H{
