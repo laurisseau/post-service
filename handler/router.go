@@ -20,6 +20,8 @@ func Router(auth *authenticator.Authenticator, router *gin.Engine) {
         panic(err)
     }
     println("db result", db)
+
+	
 	// To store custom types in our cookies,
 	// we must first register them using gob.Register
 	gob.Register(map[string]interface{}{})
