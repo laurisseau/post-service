@@ -21,8 +21,8 @@ RUN go build -o post-service main.go
 FROM debian:bookworm-slim
 
 # Install CA certificates for HTTPS
-RUN apt-get update && apt-get install -y ca-certificates \
-    && update-ca-certificates \
+RUN apt-get update && apt-get install -y ca-certificates
+RUN update-ca-certificates
 
 # Set working directory
 WORKDIR /root/
