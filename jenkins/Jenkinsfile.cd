@@ -1,0 +1,96 @@
+pipeline {
+  agent {
+    kubernetes {
+      label 'CD-pod'
+      defaultContainer 'docker'
+      yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: CD
+spec:
+  serviceAccountName: jenkins
+  nodeSelector:
+    kubernetes.io/hostname: worker
+  containers:
+    - name: docker
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+      command:
+        - dockerd-entrypoint.sh
+      args:
+        - --host=tcp://0.0.0.0:2375
+        - --host=unix:///var/run/docker.sock
+      tty: true
+"""
+    }
+  }
+
+  parameters {
+    string(
+      name: 'IMAGE_TAG',
+      defaultValue: '',
+      description: 'Docker image tag to deploy'
+    )
+  }
+
+  stages {
+
+    stage('Clone Repo') {
+      steps {
+        container('docker') {
+          git(
+            branch: 'main',
+            url: 'https://github.com/laurisseau/postServiceChart/',
+            credentialsId: 'github-cred'
+          )
+        }
+      }
+    }
+
+    stage('Upgrade Helm') {
+      steps {
+        container('docker') {
+
+          script {
+            if (!params.IMAGE_TAG?.trim()) {
+              error "IMAGE_TAG parameter is empty. Aborting."
+            }
+          }
+
+          sh """
+            apk add --no-cache curl tar
+
+            curl -fsSL https://get.helm.sh/helm-v3.16.2-linux-amd64.tar.gz -o helm.tar.gz
+            tar -zxvf helm.tar.gz
+            mv linux-amd64/helm /usr/local/bin/helm
+
+            helm version
+
+            helm template postservice . -n sportsify-ns > rendered.yaml
+
+            echo "Manifest size:"
+            ls -lh rendered.yaml
+
+            FILE_SIZE=\$(stat -c%s rendered.yaml)
+            if [ "\$FILE_SIZE" -gt 3145728 ]; then
+              echo "ERROR: Manifest exceeds 3 MB (\$FILE_SIZE bytes)"
+              exit 1
+            fi
+
+            helm get manifest postservice -n sportsify-ns | wc -c
+
+            helm upgrade --install postservice . \
+              -n sportsify-ns \
+              --set image.postService.tag=${params.IMAGE_TAG} \
+              --no-hooks \
+              --history-max 2
+
+          """
+        }
+      }
+    }
+  }
+}

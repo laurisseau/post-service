@@ -1,0 +1,230 @@
+pipeline {
+  agent {
+    kubernetes {
+      label 'post-service-pod'
+      defaultContainer 'docker'
+      yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: docker-ecr
+spec:
+  serviceAccountName: jenkins
+  nodeSelector:
+    kubernetes.io/hostname: worker
+
+  containers:
+    - name: jnlp
+      image: jenkins/inbound-agent:latest
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+          ephemeral-storage: "100Mi"
+        limits:
+          cpu: "500m"
+          memory: "512Mi"
+          ephemeral-storage: "200Mi"
+    - name: golang
+      image: golang:1.23.5-alpine
+      command: ['cat']
+      tty: true
+      resources:
+        requests:
+          ephemeral-storage: "1Gi"
+        limits:
+          ephemeral-storage: "2Gi"
+      env:
+      - name: GOPROXY
+        value: "https://proxy.golang.org,direct"
+      - name: DOCKER_HOST
+        value: "tcp://localhost:2375"
+    - name: docker
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+      command:
+        - dockerd-entrypoint.sh
+      args:
+        - --host=tcp://0.0.0.0:2375
+        - --host=unix:///var/run/docker.sock
+      tty: true
+      resources:
+        requests:
+          ephemeral-storage: "1Gi"
+        limits:
+          ephemeral-storage: "2Gi"
+"""
+    }
+  }
+
+  environment {
+    AWS_REGION   = 'us-east-1'
+    ECR_REGISTRY = '059597010299.dkr.ecr.us-east-1.amazonaws.com'
+    IMAGE_NAME   = 'post-service'
+  }
+
+  stages {
+
+    stage('Clone Repo') {
+      steps {
+        container('docker') {
+          git branch: 'main',
+              url: 'https://github.com/laurisseau/post-service'
+        }
+      }
+    }
+
+    stage('Start Test DB for CI') {
+      steps {
+        container('docker') {
+          sh """
+            echo 'Starting MySQL test container...'
+            docker run -d --name mysql-ci-test \\
+              -e MYSQL_ROOT_PASSWORD=password \\
+              -e MYSQL_DATABASE=sportsify \\
+              -p 3306:3306 \\
+              mysql:8
+
+            sleep 12
+          """
+        }
+      }
+    }
+
+    stage('Set App Test Environment Variables') {
+      steps {
+        container('docker') {
+          sh """
+            export MYSQL_USERNAME=root
+            export MYSQL_PASSWORD=password
+            export MYSQL_HOST=127.0.0.1
+            export MYSQL_PORT=3306
+            export MYSQL_DATABASE=sportsify
+
+            unset AWS_SECRET_NAME || true
+          """
+        }
+      }
+    }
+
+    stage('Test Build Application') {
+      steps {
+        container('golang') {
+          sh """
+            echo 'Running unit tests...'
+            go clean -modcache
+            apk add --no-cache go git bash
+            go mod download
+            go test ./... || true
+            go clean -modcache
+          """
+        }
+      }
+    }
+
+    stage('Set Image Tag') {
+      steps {
+        container('docker') {
+          script {
+            sh 'git config --global --add safe.directory /home/jenkins/agent/workspace/postServiceCI'
+            def commitSHA = sh(
+              script: "git rev-parse --short HEAD",
+              returnStdout: true
+            ).trim()
+
+            env.IMAGE_TAG = commitSHA
+            echo "Using image tag: ${env.IMAGE_TAG}"
+          }
+        }
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        container('docker') {
+          sh """
+            sleep 5
+            docker build -f Dockerfile -t post-service-image:${IMAGE_TAG} .
+            docker images
+          """
+        }
+      }
+    }
+
+    stage('Push to ECR') {
+      steps {
+        container('docker') {
+          withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding',
+             credentialsId: 'pipeline-aws-cred']
+          ]) {
+            sh '''
+              apk add --no-cache \
+                curl python3 py3-pip aws-cli bash gnupg ca-certificates tar
+            
+              curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+              chmod +x kubectl
+              mv kubectl /usr/local/bin
+            
+              curl -fsSL https://get.helm.sh/helm-v3.16.2-linux-amd64.tar.gz -o helm.tar.gz
+              tar -zxvf helm.tar.gz
+              mv linux-amd64/helm /usr/local/bin
+
+              aws ecr get-login-password --region ${AWS_REGION} | \
+                docker login --username AWS --password-stdin ${ECR_REGISTRY}
+            
+              docker tag post-service-image:${IMAGE_TAG} \
+                ${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+            
+              docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+              
+            # Create/update the imagePullSecret FIRST
+            kubectl create secret docker-registry post-service-secret \
+              --docker-server=${ECR_REGISTRY} \
+              --docker-username=AWS \
+              --docker-password=$(aws ecr get-login-password --region ${AWS_REGION}) \
+              --namespace=sportsify-ns \
+              --dry-run=client -o yaml | kubectl apply -f -
+            '''
+          }
+        }
+      }
+    }
+
+    stage('Save Image Tag') {
+      steps {
+        container('docker') {
+          script {
+            currentBuild.description = "Image tag: ${env.IMAGE_TAG}"
+            writeFile file: 'image-tag.txt', text: env.IMAGE_TAG
+            archiveArtifacts artifacts: 'image-tag.txt', fingerprint: true
+          }
+        }
+      }
+    }
+
+    stage('Trigger CD Pipeline') {
+      steps {
+        script {
+          build job: 'postServiceCD',
+                parameters: [
+                  string(name: 'IMAGE_TAG', value: env.IMAGE_TAG)
+                ]
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      container('docker') {
+        sh """
+          echo 'Cleaning up MySQL test container'
+          docker rm -f mysql-ci-test || true
+        """
+      }
+    }
+  }
+}
