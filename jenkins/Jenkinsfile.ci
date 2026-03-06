@@ -35,11 +35,11 @@ spec:
         requests:
           memory: "256Mi"
           cpu: "200m"
-          ephemeral-storage: "1Gi"
+          ephemeral-storage: "300Mi"  # Reduced from 1Gi
         limits:
           memory: "1Gi"
           cpu: "500m"
-          ephemeral-storage: "2Gi"
+          ephemeral-storage: "600Mi"  # Reduced from 2Gi
       env:
         - name: GOPROXY
           value: "https://proxy.golang.org,direct"
@@ -60,11 +60,11 @@ spec:
         requests:
           memory: "512Mi"
           cpu: "500m"
-          ephemeral-storage: "1Gi"
+          ephemeral-storage: "500Mi"  # Reduced from 1Gi
         limits:
           memory: "2Gi"
           cpu: "1"
-          ephemeral-storage: "2Gi"
+          ephemeral-storage: "1Gi"  # Reduced from 2Gi
 """
     }
   }
