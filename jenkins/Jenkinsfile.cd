@@ -24,6 +24,15 @@ spec:
         - --host=tcp://0.0.0.0:2375
         - --host=unix:///var/run/docker.sock
       tty: true
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "500m"
+          ephemeral-storage: "1Gi"
+        limits:
+          memory: "2Gi"
+          cpu: "1"
+          ephemeral-storage: "2Gi"
 """
     }
   }
