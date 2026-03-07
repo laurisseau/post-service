@@ -2,7 +2,7 @@ pipeline {
   agent {
     kubernetes {
       label 'CD-pod'
-      defaultContainer 'docker'
+      defaultContainer 'helm'
       yaml """
 apiVersion: v1
 kind: Pod
@@ -14,25 +14,20 @@ spec:
   nodeSelector:
     pipeline: "true"
   containers:
-    - name: docker
-      image: docker:24-dind
-      securityContext:
-        privileged: true
+    - name: helm
+      image: alpine/helm:3.16.2
       command:
-        - dockerd-entrypoint.sh
-      args:
-        - --host=tcp://0.0.0.0:2375
-        - --host=unix:///var/run/docker.sock
+        - cat
       tty: true
       resources:
         requests:
-          memory: "512Mi"
-          cpu: "500m"
-          ephemeral-storage: "1Gi"
+          memory: "256Mi"
+          cpu: "250m"
+          ephemeral-storage: "500Mi"
         limits:
-          memory: "2Gi"
+          memory: "1Gi"
           cpu: "1"
-          ephemeral-storage: "2Gi"
+          ephemeral-storage: "1Gi"
 """
     }
   }
@@ -49,7 +44,7 @@ spec:
 
     stage('Clone Repo') {
       steps {
-        container('docker') {
+        container('helm') {
           git(
             branch: 'main',
             url: 'https://github.com/laurisseau/postServiceChart/',
@@ -61,7 +56,7 @@ spec:
 
     stage('Upgrade Helm') {
       steps {
-        container('docker') {
+        container('helm') {
 
           script {
             if (!params.IMAGE_TAG?.trim()) {
@@ -70,12 +65,6 @@ spec:
           }
 
           sh """
-            apk add --no-cache curl tar
-
-            curl -fsSL https://get.helm.sh/helm-v3.16.2-linux-amd64.tar.gz -o helm.tar.gz
-            tar -zxvf helm.tar.gz
-            mv linux-amd64/helm /usr/local/bin/helm
-
             helm version
 
             helm template postservice . -n sportsify-ns > rendered.yaml
@@ -96,7 +85,6 @@ spec:
               --set image.postService.tag=${params.IMAGE_TAG} \
               --no-hooks \
               --history-max 2
-
           """
         }
       }
