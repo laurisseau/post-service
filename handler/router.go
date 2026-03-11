@@ -21,17 +21,25 @@ func Router(db *sql.DB, auth *authenticator.Authenticator, router *gin.Engine) {
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("auth-session", store))
 
-	router.POST("/post/create", func(c *gin.Context) {
-		post.CreateHandler(c, db)
-	})
+	// Create a /posts route group
+    postsGroup := router.Group("/posts")
+    {
+        postsGroup.POST("/create", func(c *gin.Context) {
+            post.CreateHandler(c, db)
+        })
 
-	router.GET("/post/listUserPosts", func(c *gin.Context) {
-		post.ListUserPostsHandler(c, db)
-	})
+        postsGroup.GET("/listUserPosts", func(c *gin.Context) {
+            post.ListUserPostsHandler(c, db)
+        })
 
-	/*
-	router.DELETE("/post/delete:id", middleware.IsAuthenticated,)
-    router.PATCH("/post/update:id", middleware.IsAuthenticated,)
-    
-	*/
+        /*
+        postsGroup.DELETE("/delete/:id", middleware.IsAuthenticated, func(c *gin.Context) {
+            // delete handler here
+        })
+
+        postsGroup.PATCH("/update/:id", middleware.IsAuthenticated, func(c *gin.Context) {
+            // update handler here
+        })
+        */
+    }
 }

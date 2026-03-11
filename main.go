@@ -26,11 +26,11 @@ func main() {
 
 	handler.Router(db, auth, r)
 
-    r.GET("post/", func(c *gin.Context) {
+    r.GET("posts/", func(c *gin.Context) {
         c.JSON(http.StatusOK, gin.H{
             "message": "Welcome to Sportsify post!",
         })
     })
 
-    r.Run(":8081") // Starts server on http://localhost:8081 post application port
+    r.Run(":8081") // Starts server on http://localhost:8081/posts post application port
 }
