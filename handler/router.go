@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/laurisseau/post-service/handler/post"
 	"github.com/laurisseau/user-service/authenticator"
-	//"github.com/laurisseau/post-service/handler/middleware"
+	"github.com/laurisseau/post-service/handler/middleware"
 )
 
 // New registers the routes and returns the router.
@@ -24,22 +24,21 @@ func Router(db *sql.DB, auth *authenticator.Authenticator, router *gin.Engine) {
 	// Create a /posts route group
     postsGroup := router.Group("/posts")
     {
-        postsGroup.POST("/create", func(c *gin.Context) {
+        postsGroup.POST("/create", middleware.IsAuthenticated, func(c *gin.Context) {
             post.CreateHandler(c, db)
         })
 
-        postsGroup.GET("/listUserPosts", func(c *gin.Context) {
+        postsGroup.GET("/listUserPosts", middleware.IsAuthenticated, func(c *gin.Context) {
             post.ListUserPostsHandler(c, db)
         })
 
-        /*
         postsGroup.DELETE("/delete/:id", middleware.IsAuthenticated, func(c *gin.Context) {
-            // delete handler here
+            post.DeleteUserPostsHandler(c, db)
         })
 
         postsGroup.PATCH("/update/:id", middleware.IsAuthenticated, func(c *gin.Context) {
-            // update handler here
+            post.UpdateUserPostHandler(c, db)
         })
-        */
+
     }
 }
