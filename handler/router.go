@@ -24,19 +24,19 @@ func Router(db *sql.DB, auth *authenticator.Authenticator, router *gin.Engine) {
 	// Create a /posts route group
     postsGroup := router.Group("/posts")
     {
-        postsGroup.POST("/create", middleware.IsAuthenticated, func(c *gin.Context) {
+        postsGroup.POST("/create", middleware.MetricsMiddleware(), middleware.IsAuthenticated, func(c *gin.Context) {
             post.CreateHandler(c, db)
         })
 
-        postsGroup.GET("/listUserPosts", middleware.IsAuthenticated, func(c *gin.Context) {
+        postsGroup.GET("/listUserPosts", middleware.MetricsMiddleware(), middleware.IsAuthenticated, func(c *gin.Context) {
             post.ListUserPostsHandler(c, db)
         })
 
-        postsGroup.DELETE("/delete/:id", middleware.IsAuthenticated, func(c *gin.Context) {
+        postsGroup.DELETE("/delete/:id", middleware.MetricsMiddleware(), middleware.IsAuthenticated, func(c *gin.Context) {
             post.DeleteUserPostsHandler(c, db)
         })
 
-        postsGroup.PATCH("/update/:id", middleware.IsAuthenticated, func(c *gin.Context) {
+        postsGroup.PATCH("/update/:id", middleware.MetricsMiddleware(), middleware.IsAuthenticated, func(c *gin.Context) {
             post.UpdateUserPostHandler(c, db)
         })
 

@@ -17,6 +17,7 @@ import (
 	"encoding/json"
     _ "github.com/go-sql-driver/mysql"
 	"fmt"
+    "github.com/laurisseau/post-service/metrics"
 )
 
 
@@ -70,6 +71,8 @@ func scanPost(row *sql.Rows) (models.Post, error) {
 }
 
 func CreateHandler(ctx *gin.Context, db *sql.DB) {
+    start := time.Now()
+
 	// Parse multipart form
 	form, err := ctx.MultipartForm()
 	if err != nil {
@@ -207,12 +210,21 @@ func CreateHandler(ctx *gin.Context, db *sql.DB) {
 		return
 	}
 
+        // Record business metrics
+    metrics.PostsCreatedTotal.Inc()
+    
+    // Record database query duration
+    metrics.DatabaseQueryDuration.WithLabelValues("insert", "posts").Observe(time.Since(start).Seconds())
+
 	// Return the Post that was stored
 	ctx.JSON(http.StatusOK, gin.H{"post": post})
 }
 
 
 func ListUserPostsHandler(ctx *gin.Context, db *sql.DB) {
+
+    start := time.Now()
+
     userID := utils.GetProfileIdFromSession(ctx)
     if userID == "" {
         ctx.JSON(http.StatusBadRequest, gin.H{"error": "Missing user_id"})
@@ -240,10 +252,15 @@ func ListUserPostsHandler(ctx *gin.Context, db *sql.DB) {
         posts = append(posts, post)
     }
 
+    // Record database query
+    metrics.DatabaseQueryDuration.WithLabelValues("select", "posts").Observe(time.Since(start).Seconds())
+
     ctx.JSON(http.StatusOK, gin.H{"user_posts": posts})
 }
 
 func DeleteUserPostsHandler(ctx *gin.Context, db *sql.DB) {
+    start := time.Now()
+
     // Get user ID from session
     userID := utils.GetProfileIdFromSession(ctx)
     if userID == "" {
@@ -283,6 +300,9 @@ func DeleteUserPostsHandler(ctx *gin.Context, db *sql.DB) {
         return
     }
 
+    metrics.PostsDeletedTotal.Inc()
+    metrics.DatabaseQueryDuration.WithLabelValues("delete", "posts").Observe(time.Since(start).Seconds())
+
     ctx.JSON(http.StatusOK, gin.H{
         "message":       "Post deleted successfully",
         "rows_affected": rowsAffected,
@@ -291,6 +311,7 @@ func DeleteUserPostsHandler(ctx *gin.Context, db *sql.DB) {
 
 
 func UpdateUserPostHandler(ctx *gin.Context, db *sql.DB) {
+
     // Get user ID from session
     userID := utils.GetProfileIdFromSession(ctx)
     if userID == "" {
@@ -318,6 +339,9 @@ func UpdateUserPostHandler(ctx *gin.Context, db *sql.DB) {
 }
 
 func updatePostWithJSON(ctx *gin.Context, db *sql.DB, postID, userID string) {
+
+    start := time.Now()
+
     var updateData struct {
         Caption    *string   `json:"caption"`
         Visibility *string   `json:"visibility"`
@@ -384,10 +408,16 @@ func updatePostWithJSON(ctx *gin.Context, db *sql.DB, postID, userID string) {
         return
     }
 
+    metrics.PostsUpdatedTotal.Inc()
+    metrics.DatabaseQueryDuration.WithLabelValues("update", "posts").Observe(time.Since(start).Seconds())
+
     ctx.JSON(http.StatusOK, gin.H{"message": "Post updated successfully", "post": updatedPost})
 }
 
 func updatePostWithFiles(ctx *gin.Context, db *sql.DB, postID, userID string) {
+
+    start := time.Now()
+    
     // Parse multipart form
     form, err := ctx.MultipartForm()
     if err != nil {
@@ -490,6 +520,9 @@ func updatePostWithFiles(ctx *gin.Context, db *sql.DB, postID, userID string) {
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated post"})
         return
     }
+
+    metrics.PostsUpdatedTotal.Inc()
+    metrics.DatabaseQueryDuration.WithLabelValues("update", "posts").Observe(time.Since(start).Seconds())
 
     ctx.JSON(http.StatusOK, gin.H{"message": "Post updated successfully", "post": updatedPost})
 }
